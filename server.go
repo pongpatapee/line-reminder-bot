@@ -48,6 +48,8 @@ func (reminderBot *ReminderBot) callbackHandler(w http.ResponseWriter, req *http
 			return
 		}
 
+		log.Println("Message received from user: " + message.Text)
+
 		if _, err = reminderBot.bot.ReplyMessage(
 			&messaging_api.ReplyMessageRequest{
 				ReplyToken: e.ReplyToken,
@@ -60,7 +62,8 @@ func (reminderBot *ReminderBot) callbackHandler(w http.ResponseWriter, req *http
 		); err != nil {
 			log.Print(err)
 		} else {
-			log.Println("Sent text reply.")
+			// log.Println("Sent text reply.")
+			log.Println("Message sending back to user: " + message.Text)
 		}
 
 	}
