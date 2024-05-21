@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
+
+	"github.com/joho/godotenv"
 )
 
 type ReminderBot struct {
@@ -50,26 +53,53 @@ func (reminderBot *ReminderBot) callbackHandler(w http.ResponseWriter, req *http
 
 		log.Println("Message received from user: " + message.Text)
 
+		// timeTilReminder, reminderMessage, err := parseReminderCommand(message.Text)
+		_, reminderMessage, err := ParseReminderCommand(message.Text)
+		if err != nil {
+			if err.Error() == "not a reminder" {
+				return
+			}
+
+			if _, err = reminderBot.bot.ReplyMessage(
+				&messaging_api.ReplyMessageRequest{
+					ReplyToken: e.ReplyToken,
+					Messages: []messaging_api.MessageInterface{
+						messaging_api.TextMessage{
+							Text: err.Error(),
+						},
+					},
+				},
+			); err != nil {
+				log.Println("An error occured while sending a reply message")
+				log.Println(err)
+			}
+
+			return
+		}
+
 		if _, err = reminderBot.bot.ReplyMessage(
 			&messaging_api.ReplyMessageRequest{
 				ReplyToken: e.ReplyToken,
 				Messages: []messaging_api.MessageInterface{
 					messaging_api.TextMessage{
-						Text: message.Text,
+						Text: reminderMessage,
 					},
 				},
 			},
 		); err != nil {
-			log.Print(err)
-		} else {
-			// log.Println("Sent text reply.")
-			log.Println("Message sending back to user: " + message.Text)
+			log.Println("An error occured while sending a reply message")
+			log.Println(err)
 		}
 
 	}
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	channelSecret := os.Getenv("LINE_CHANNEL_SECRET")
 	bot, err := messaging_api.NewMessagingApiAPI(os.Getenv("LINE_CHANNEL_TOKEN"))
 	if err != nil {
@@ -83,6 +113,18 @@ func main() {
 
 	http.HandleFunc("/ping", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, "Wh1fty line reminder bot")
+	})
+
+	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "From /test")
+
+		duration, err := time.ParseDuration("5s")
+		if err != nil {
+			return
+		}
+		time.AfterFunc(duration, func() {
+			fmt.Printf("yoyo brother what's good\n")
+		})
 	})
 
 	http.HandleFunc("/callback", reminderBot.callbackHandler)
