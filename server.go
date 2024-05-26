@@ -35,6 +35,7 @@ func (reminderBot *ReminderBot) callbackHandler(w http.ResponseWriter, req *http
 
 	log.Println("Handling events: ")
 
+	// NOTE: might want to change returns -> continue
 	for _, event := range callback.Events {
 		log.Printf("/callback called%+v...\n", event)
 
@@ -53,44 +54,42 @@ func (reminderBot *ReminderBot) callbackHandler(w http.ResponseWriter, req *http
 
 		log.Println("Message received from user: " + message.Text)
 
-		// timeTilReminder, reminderMessage, err := parseReminderCommand(message.Text)
-		_, reminderMessage, err := ParseReminderCommand(message.Text)
+		timeTilReminder, reminderMessage, err := ParseReminderCommand(message.Text)
 		if err != nil {
 			if err.Error() == "not a reminder" {
 				return
 			}
 
-			if _, err = reminderBot.bot.ReplyMessage(
-				&messaging_api.ReplyMessageRequest{
-					ReplyToken: e.ReplyToken,
-					Messages: []messaging_api.MessageInterface{
-						messaging_api.TextMessage{
-							Text: err.Error(),
-						},
-					},
-				},
-			); err != nil {
-				log.Println("An error occured while sending a reply message")
-				log.Println(err)
-			}
-
+			sendReplyMessage(reminderBot, e, err.Error())
 			return
 		}
 
-		if _, err = reminderBot.bot.ReplyMessage(
-			&messaging_api.ReplyMessageRequest{
-				ReplyToken: e.ReplyToken,
-				Messages: []messaging_api.MessageInterface{
-					messaging_api.TextMessage{
-						Text: reminderMessage,
-					},
+		log.Printf("Will send reminder message in %v\n", timeTilReminder)
+
+		reminderTime := time.Now().Add(timeTilReminder)
+		reminderConfirmation := fmt.Sprintf("Reminder set!\nReminder Time: %v\nReminder message: %v", reminderTime, reminderMessage)
+		sendReplyMessage(reminderBot, e, reminderConfirmation)
+
+		time.AfterFunc(timeTilReminder, func() {
+			log.Printf("Sending reminder message '%v'\n", reminderMessage)
+			sendReplyMessage(reminderBot, e, reminderMessage)
+		})
+	}
+}
+
+func sendReplyMessage(reminderBot *ReminderBot, e webhook.MessageEvent, message string) {
+	if _, err := reminderBot.bot.ReplyMessage(
+		&messaging_api.ReplyMessageRequest{
+			ReplyToken: e.ReplyToken,
+			Messages: []messaging_api.MessageInterface{
+				messaging_api.TextMessage{
+					Text: message,
 				},
 			},
-		); err != nil {
-			log.Println("An error occured while sending a reply message")
-			log.Println(err)
-		}
-
+		},
+	); err != nil {
+		log.Println("An error occured while sending a reply message")
+		log.Println(err)
 	}
 }
 

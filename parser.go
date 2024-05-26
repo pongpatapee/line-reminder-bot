@@ -31,24 +31,24 @@ func ParseReminderCommand(commandString string) (time.Duration, string, error) {
 	currentTime := time.Now()
 
 	reminderTime = time.Date(
-            currentTime.Year(), 
-            currentTime.Month(), 
-            currentTime.Day(), 
-            reminderTime.Hour(), 
-            reminderTime.Minute(), 
-            reminderTime.Second(), 
-            0, 
-            currentTime.Location(),
-        )
+		currentTime.Year(),
+		currentTime.Month(),
+		currentTime.Day(),
+		reminderTime.Hour(),
+		reminderTime.Minute(),
+		reminderTime.Second(),
+		0,
+		currentTime.Location(),
+	)
 
-    if reminderTime.Before(currentTime) {
-        reminderTime = reminderTime.Add(24 * time.Hour)
-    }
+	if reminderTime.Before(currentTime) {
+		reminderTime = reminderTime.Add(24 * time.Hour)
+	}
 
-    timeTilReminder := reminderTime.Sub(currentTime)
+	timeTilReminder := reminderTime.Sub(currentTime)
 
 	fmt.Println("Reminder time: ", reminderTime)
-    fmt.Println("Time until reminder: ", timeTilReminder)
+	fmt.Println("Time until reminder: ", timeTilReminder)
 
 	return timeTilReminder, reminderMessage, nil
 }
